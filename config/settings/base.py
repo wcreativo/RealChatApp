@@ -28,9 +28,9 @@ BASE_APPS = [
     "django.contrib.staticfiles",
 ]
 
-LOCAL_APPS = ["apps.users", "apps.chatroom"]
+LOCAL_APPS = ["apps.users", "apps.chatroom", "apps.websocketchat"]
 
-THIRD_APPS = ["channels", "drf_spectacular", 'rest_framework']
+THIRD_APPS = ["channels", "drf_spectacular", 'rest_framework', 'rest_framework.authtoken', 'dj_rest_auth']
 
 INSTALLED_APPS = BASE_APPS + LOCAL_APPS + THIRD_APPS
 
@@ -50,7 +50,6 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -106,9 +105,9 @@ AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.AllowAny',
-    # ]
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
 }
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -122,4 +121,5 @@ CHANNEL_LAYERS = {
     },
 }
 
+SESSION_COOKIE_AGE = 30 * 24 * 60 * 60
 

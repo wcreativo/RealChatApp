@@ -34,10 +34,10 @@ urlpatterns = [
         "api/v1/",
         include(
             [
-                # path('', include('dj_rest_auth.urls')),
+                path('dj-rest-auth/', include('dj_rest_auth.urls')), 
                 path("chatroom/", include("apps.chatroom.urls")),
             ]
         ),
     ),
-    
+    path("socket/", include("apps.websocketchat.urls"))
 ]
