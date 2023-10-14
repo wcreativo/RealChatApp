@@ -1,0 +1,23 @@
+{
+    "editor.formatOnSave": true,
+    "python.pythonPath": ".venv/bin/python3",
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+        "--line-length=120"
+    ],
+    "python.sortImports.args": [
+        "--profile",
+        "black"
+    ],
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        },
+        "editor.rulers": [
+            120
+        ]
+    },
+    "python.linting.pylamaArgs": [
+        "--ignore=E501"
+    ]
+}

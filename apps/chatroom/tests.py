@@ -1,108 +1,72 @@
-# chat/tests.py
-from channels.testing import ChannelsLiveServerTestCase
-from selenium import webdriver
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.wait import WebDriverWait
-import os
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from asgiref.testing import ApplicationCommunicator
+from .models import Chatroom
+from rest_framework.test import APIClient
 
 
-class ChatTests(ChannelsLiveServerTestCase):
-    serve_static = True 
+class SendMessageViewTestCase(TestCase):
+    def setUp(self):
+        self.room_name = "test_room"
+        self.chatroom = Chatroom.objects.create(name=self.room_name)
+        self.valid_message_data = {
+            "room_name": self.room_name,
+            "message": "Test message",
+        }
+        self.invalid_message_data = {
+            "room_name": "non_existent_room",
+            "message": "Test message",
+        }
+        self.valid_url = reverse("send_message")
+        self.client = APIClient()
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        try:
-            chromedriver_path = '/Users/wilbertmojica/Downloads'
-            os.environ["PATH"] += os.pathsep + chromedriver_path
-            cls.driver = webdriver.Chrome()
-        except:
-            super().tearDownClass()
-            raise
+    def test_send_valid_message(self):
+        response = self.client.post(
+            self.valid_url, data=self.valid_message_data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"success": True})
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.driver.quit()
-        super().tearDownClass()
-
-    def test_when_chat_message_posted_then_seen_by_everyone_in_same_room(self):
-        try:
-            self._enter_chat_room("room_1")
-
-            self._open_new_window()
-            self._enter_chat_room("room_1")
-
-            self._switch_to_window(0)
-            self._post_message("hello")
-            WebDriverWait(self.driver, 2).until(
-                lambda _: "hello" in self._chat_log_value,
-                "Message was not received by window 1 from window 1",
-            )
-            self._switch_to_window(1)
-            WebDriverWait(self.driver, 2).until(
-                lambda _: "hello" in self._chat_log_value,
-                "Message was not received by window 2 from window 1",
-            )
-        finally:
-            self._close_all_new_windows()
-
-    def test_when_chat_message_posted_then_not_seen_by_anyone_in_different_room(self):
-        try:
-            self._enter_chat_room("room_1")
-
-            self._open_new_window()
-            self._enter_chat_room("room_2")
-
-            self._switch_to_window(0)
-            self._post_message("hello")
-            WebDriverWait(self.driver, 2).until(
-                lambda _: "hello" in self._chat_log_value,
-                "Message was not received by window 1 from window 1",
-            )
-
-            self._switch_to_window(1)
-            self._post_message("world")
-            WebDriverWait(self.driver, 2).until(
-                lambda _: "world" in self._chat_log_value,
-                "Message was not received by window 2 from window 2",
-            )
-            self.assertTrue(
-                "hello" not in self._chat_log_value,
-                "Message was improperly received by window 2 from window 1",
-            )
-        finally:
-            self._close_all_new_windows()
-
-    # === Utility ===
-
-    def _enter_chat_room(self, room_name):
-        self.driver.get(self.live_server_url + "/chat/")
-        ActionChains(self.driver).send_keys(room_name, Keys.ENTER).perform()
-        WebDriverWait(self.driver, 2).until(
-            lambda _: room_name in self.driver.current_url
+    def test_send_message_to_non_existent_room(self):
+        response = self.client.post(
+            self.valid_url, data=self.invalid_message_data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data,
+            {
+                "error": f"Room name {self.invalid_message_data['room_name']} doesn't exist!"
+            },
         )
 
-    def _open_new_window(self):
-        self.driver.execute_script('window.open("about:blank", "_blank");')
-        self._switch_to_window(-1)
+    def test_channel_layer_message_send(self):
+        communicator = ApplicationCommunicator(
+            self.application,
+            {"type": "websocket.connect"},
+            scope={"type": "websocket.connect"},
+        )
+        communicator.scope["user"] = self.user
+        communicator.scope["room_name"] = self.room_name
+        communicator.scope["type"] = "websocket.connect"
+        communicator.connect()
+        message_data = {
+            "type": "chat.message",
+            "message": "Test message",
+        }
+        communicator.send_json_to(message_data)
+        response = communicator.receive_json_from()
+        self.assertEqual(response["type"], "chat.message")
+        self.assertEqual(response["message"], "Test message")
 
-    def _close_all_new_windows(self):
-        while len(self.driver.window_handles) > 1:
-            self._switch_to_window(-1)
-            self.driver.execute_script("window.close();")
-        if len(self.driver.window_handles) == 1:
-            self._switch_to_window(0)
+    def test_invalid_data_returns_400(self):
+        response = self.client.post(self.valid_url, data={}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def _switch_to_window(self, window_index):
-        self.driver.switch_to.window(self.driver.window_handles[window_index])
-
-    def _post_message(self, message):
-        ActionChains(self.driver).send_keys(message, Keys.ENTER).perform()
-
-    @property
-    def _chat_log_value(self):
-        return self.driver.find_element(
-            by=By.CSS_SELECTOR, value="#chat-log"
-        ).get_property("value")
+    def test_serializer_validation_error_returns_400(self):
+        invalid_data = {
+            "room_name": "test_room",
+            "message": "",
+        }
+        response = self.client.post(self.valid_url, data=invalid_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
