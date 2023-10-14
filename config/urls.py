@@ -17,14 +17,19 @@ import os
 
 from django.contrib import admin
 from django.urls import path, include
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="api-docs"),
+    path(
+        "api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="api-docs"
+    ),
     path(
         "api/schema/redoc/",
         SpectacularRedocView.as_view(url_name="schema"),
@@ -34,10 +39,10 @@ urlpatterns = [
         "api/v1/",
         include(
             [
-                path('dj-rest-auth/', include('dj_rest_auth.urls')), 
+                path("dj-rest-auth/", include("dj_rest_auth.urls")),
                 path("chatroom/", include("apps.chatroom.urls")),
             ]
         ),
     ),
-    path("socket/", include("apps.websocketchat.urls"))
+    path("socket/", include("apps.websocketchat.urls")),
 ]

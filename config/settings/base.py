@@ -30,7 +30,14 @@ BASE_APPS = [
 
 LOCAL_APPS = ["apps.users", "apps.chatroom", "apps.websocketchat"]
 
-THIRD_APPS = ["channels", "drf_spectacular", 'rest_framework', 'rest_framework.authtoken', 'dj_rest_auth']
+THIRD_APPS = [
+    "channels",
+    "drf_spectacular",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "dj_rest_auth",
+    "drf_api_logger",
+]
 
 INSTALLED_APPS = BASE_APPS + LOCAL_APPS + THIRD_APPS
 
@@ -42,7 +49,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'simple_history.middleware.HistoryRequestMiddleware',
+    "simple_history.middleware.HistoryRequestMiddleware",
+    "drf_api_logger.middleware.api_logger_middleware.APILoggerMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -101,16 +109,16 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ]
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
 }
 
-ASGI_APPLICATION = 'config.asgi.application'
+ASGI_APPLICATION = "config.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -123,3 +131,4 @@ CHANNEL_LAYERS = {
 
 SESSION_COOKIE_AGE = 30 * 24 * 60 * 60
 
+DRF_API_LOGGER_DATABASE = True

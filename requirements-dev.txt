@@ -13,3 +13,4 @@ channels>=4.0.0,<4.0.1
 daphne>=4.0.0,<4.0.1
 channels-redis>=4.1.0,<4.2.0
 selenium>=4.14.0,<4.15.0
+drf-api-logger>=1.1.14,<1.1.15
